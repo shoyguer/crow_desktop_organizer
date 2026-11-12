@@ -44,7 +44,7 @@ jobs:
       artifact: ${{ steps.version.outputs.artifact }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Rust
         run: |
@@ -120,7 +120,7 @@ jobs:
       - name: Upload for signing
         id: unsigned
         if: false # turn this on along with SignPath below
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unsigned
           path: dist/
@@ -135,7 +135,7 @@ jobs:
       # by pointing CROW_EXE at it.
       - name: Sign with SignPath
         if: false
-        uses: signpath/github-action-submit-signing-request@v1
+        uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -165,14 +165,14 @@ jobs:
       #   gh attestation verify CrowFOSetup.exe -R <owner>/<repo>
       - name: Attest build provenance
         if: github.event_name != 'pull_request' && !github.event.repository.private
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/CrowFOSetup.exe
             dist/CrowFO-portable.exe
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.version.outputs.artifact }}
           path: dist/
@@ -188,13 +188,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.artifact }}
           path: dist
 
       - name: Publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Crow FO ${{ needs.build.outputs.display }}
           prerelease: ${{ needs.build.outputs.prerelease == 'true' }}
