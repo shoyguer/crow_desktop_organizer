@@ -2,7 +2,7 @@
 name = "crow_menu"
 version.workspace = true
 edition = "2021"
-description = "Windows 11 context menu handler (IExplorerCommand) for Crow FO"
+description = "Windows 11 context menu handler (IExplorerCommand) for Crow DO"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true

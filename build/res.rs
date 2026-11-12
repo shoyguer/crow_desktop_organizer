@@ -97,7 +97,7 @@ mod res {
             string("InternalName", file.trim_end_matches(".exe").trim_end_matches(".dll")),
             string("LegalCopyright", &format!("Copyright (c) {author}")),
             string("OriginalFilename", file),
-            string("ProductName", "Crow FO"),
+            string("ProductName", "Crow DO"),
             string("ProductVersion", &display),
         ]);
         let sfi = node("StringFileInfo", &[], 0, true, &[table]);
@@ -111,8 +111,8 @@ mod res {
 
     const MANIFEST: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="Crow.FolderOrganizer" version="{VERSION}" processorArchitecture="amd64"/>
-  <description>Crow FO</description>
+  <assemblyIdentity type="win32" name="Crow.DesktopOrganizer" version="{VERSION}" processorArchitecture="amd64"/>
+  <description>Crow DO</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security><requestedPrivileges><requestedExecutionLevel level="asInvoker" uiAccess="false"/></requestedPrivileges></security>
   </trustInfo>
@@ -176,7 +176,7 @@ mod res {
     }
 
     /// Same as `write`, plus an optional binary payload stored as RCDATA #1
-    /// (the installer carries CrowFO.exe this way).
+    /// (the installer carries CrowDO.exe this way).
     pub fn write_with(path: &std::path::Path, desc: &str, file: &str, dll: bool, icons: &[&[u8]], rcdata: Option<&[u8]>) {
         let mut out = vec![0u8; 32];
         out[4] = 32;

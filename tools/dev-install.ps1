@@ -1,9 +1,9 @@
 <#
-  Developer install. End users should use CrowFOSetup.exe instead.
+  Developer install. End users should use CrowDOSetup.exe instead.
 
-  Installs Crow FO and registers its entry in the Windows 11 desktop context menu.
+  Installs Crow DO and registers its entry in the Windows 11 desktop context menu.
 
-  The script copies CrowFO.exe and crow_menu.dll to the install folder, builds a
+  The script copies CrowDO.exe and crow_menu.dll to the install folder, builds a
   sparse package from packaging\AppxManifest.xml, signs it with a single-use
   self-signed certificate and registers it. Windows asks for admin rights once
   per install so the certificate can be trusted.
@@ -12,7 +12,7 @@
           powershell -ExecutionPolicy Bypass -File tools\dev-install.ps1
 #>
 param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\Programs\Crow FO",
+    [string]$InstallDir = "$env:LOCALAPPDATA\Programs\Crow DO",
     [switch]$NoContextMenu
 )
 $ErrorActionPreference = 'Stop'
@@ -21,16 +21,16 @@ $rel  = Join-Path $repo 'target\x86_64-pc-windows-msvc\release'
 $out  = Join-Path $PSScriptRoot '.out'
 $sdk  = Join-Path $PSScriptRoot '.sdk'
 
-foreach ($f in 'CrowFO.exe', 'crow_menu.dll') {
+foreach ($f in 'CrowDO.exe', 'crow_menu.dll') {
     if (-not (Test-Path (Join-Path $rel $f))) { throw "$f is missing. Run: cargo build --release --workspace" }
 }
 
 Write-Host '1/5 Copying files'
-Get-Process CrowFO -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process CrowDO -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 300
 New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Copy-Item (Join-Path $rel 'CrowFO.exe'), (Join-Path $rel 'crow_menu.dll') $InstallDir -Force
-$p = Start-Process (Join-Path $InstallDir 'CrowFO.exe') -ArgumentList "--export-art `"$InstallDir`"" -PassThru -Wait
+Copy-Item (Join-Path $rel 'CrowDO.exe'), (Join-Path $rel 'crow_menu.dll') $InstallDir -Force
+$p = Start-Process (Join-Path $InstallDir 'CrowDO.exe') -ArgumentList "--export-art `"$InstallDir`"" -PassThru -Wait
 if ($p.ExitCode -ne 0) { throw 'Could not generate the icons.' }
 
 if (-not $NoContextMenu) {
@@ -77,7 +77,7 @@ if (-not $NoContextMenu) {
     # The trade-off is one admin prompt on every install.
     Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq 'CN=Crow' } |
         ForEach-Object { Remove-Item -Path "Cert:\CurrentUser\My\$($_.Thumbprint)" -DeleteKey }
-    $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=Crow' -FriendlyName 'Crow FO (local package)' `
+    $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=Crow' -FriendlyName 'Crow DO (local package)' `
         -KeyUsage DigitalSignature -KeyExportPolicy NonExportable -NotAfter (Get-Date).AddYears(5) `
         -CertStoreLocation Cert:\CurrentUser\My `
         -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
@@ -91,8 +91,8 @@ if (-not $NoContextMenu) {
     }
     Write-Host '   Trusting the certificate (please accept the admin prompt)'
     # One admin prompt does two things. It trusts only the new public certificate
-    # (dropping any older Crow FO one), and it lets this user change the shared
-    # desktop, so shortcuts installed for all users can be moved into Crow FO too.
+    # (dropping any older Crow DO one), and it lets this user change the shared
+    # desktop, so shortcuts installed for all users can be moved into Crow DO too.
     $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     $pub = [Environment]::GetFolderPath('CommonDesktopDirectory')
     $cmd = "Get-ChildItem Cert:\LocalMachine\TrustedPeople | Where-Object { `$_.Subject -eq 'CN=Crow' } | Remove-Item; " +
@@ -102,9 +102,9 @@ if (-not $NoContextMenu) {
     if ($p.ExitCode -ne 0) { throw 'The certificate could not be trusted.' }
 
     Write-Host '5/5 Registering the context menu'
-    Get-AppxPackage -Name 'Crow.FolderOrganizer' | Remove-AppxPackage
+    'Crow.DesktopOrganizer', 'Crow.FolderOrganizer' | ForEach-Object { Get-AppxPackage -Name $_ } | Remove-AppxPackage
     Add-AppxPackage -Path $msix -ExternalLocation $InstallDir
 }
 
-Start-Process (Join-Path $InstallDir 'CrowFO.exe')
-Write-Host "Done. Crow FO is installed in $InstallDir"
+Start-Process (Join-Path $InstallDir 'CrowDO.exe')
+Write-Host "Done. Crow DO is installed in $InstallDir"

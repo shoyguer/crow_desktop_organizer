@@ -20,13 +20,13 @@ pub const T_IDLE: usize = 10;
 /// Slow check that trims memory again when Windows threads inside the process
 /// (shell extensions, COM) grew it while Crow itself stayed asleep.
 pub const T_WATCH: usize = 12;
-/// Sent by a second `CrowFO.exe --new` or `--new-panel`. wParam is 1 for a hover folder and 2 for a panel.
+/// Sent by a second `CrowDO.exe --new` or `--new-panel`. wParam is 1 for a hover folder and 2 for a panel.
 pub const WM_CROW_NEW: u32 = WM_USER + 0x43;
 /// Asks the running instance to show its settings window.
 pub const WM_CROW_PREFS: u32 = WM_USER + 0x45;
 /// Asks the running instance to save and quit (used by setup and uninstall).
 pub const WM_CROW_QUIT: u32 = WM_USER + 0x46;
-/// Sent by `CrowFO.exe --check-update --now`. wParam is one of the update::* states.
+/// Sent by `CrowDO.exe --check-update --now`. wParam is one of the update::* states.
 pub const WM_CROW_UPDATE: u32 = WM_USER + 0x47;
 
 pub struct Fonts {
@@ -251,11 +251,11 @@ impl App {
             RegisterClassExW(&wc);
             wc.hbrBackground = 0;
             wc.lpfnWndProc = host_proc;
-            wc.lpszClassName = w!("CrowFOHost").as_ptr();
+            wc.lpszClassName = w!("CrowDOHost").as_ptr();
             RegisterClassExW(&wc);
             crate::popup::register_class();
             let a = app();
-            a.msg = CreateWindowExW(WS_EX_TOOLWINDOW, w!("CrowFOHost").as_ptr(), w!("Crow FO").as_ptr(), WS_POPUP, 0, 0, 0, 0, 0, 0, inst, core::ptr::null());
+            a.msg = CreateWindowExW(WS_EX_TOOLWINDOW, w!("CrowDOHost").as_ptr(), w!("Crow DO").as_ptr(), WS_POPUP, 0, 0, 0, 0, 0, 0, inst, core::ptr::null());
             a.taskbar_msg = RegisterWindowMessageW(w!("TaskbarCreated").as_ptr());
             for f in cfg.folders {
                 a.add_folder(f);

@@ -27,7 +27,7 @@ pub fn get(url: &str, accept: &str, max: usize) -> Result<Vec<u8>, Error> {
         Some(i) => (&rest[..i], &rest[i..]),
         None => (rest, "/"),
     };
-    let mut agent = String::from("CrowFO/");
+    let mut agent = String::from("CrowDO/");
     agent.push_str(env!("CARGO_PKG_VERSION"));
     unsafe {
         // 4 is WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, which follows the system proxy

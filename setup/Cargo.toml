@@ -2,13 +2,13 @@
 name = "crow-setup"
 version.workspace = true
 edition = "2021"
-description = "Installer for Crow FO"
+description = "Installer for Crow DO"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "CrowFOSetup"
+name = "CrowDOSetup"
 path = "src/main.rs"
 test = false
 bench = false

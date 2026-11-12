@@ -1,14 +1,14 @@
 //! Disk layout. Data that should follow the user lives inside Documents, so
 //! anything that backs up or syncs the user's folders (OneDrive, or restoring
-//! a new PC) carries Crow FO along. Moving a shortcut into a folder is then
+//! a new PC) carries Crow DO along. Moving a shortcut into a folder is then
 //! just a move inside the synced tree.
 //!
-//!   <Documents>\Crow FO\crow.ini       settings and per-PC positions
-//!   <Documents>\Crow FO\f<id>\*.lnk    the shortcuts of folder <id>
+//!   <Documents>\Crow DO\crow.ini       settings and per-PC positions
+//!   <Documents>\Crow DO\f<id>\*.lnk    the shortcuts of folder <id>
 //!
 //! Data that belongs to this machine and can be rebuilt stays local.
 //!
-//!   %LOCALAPPDATA%\Crow FO\cache\f<id>.icons   memory-mapped icon cache
+//!   %LOCALAPPDATA%\Crow DO\cache\f<id>.icons   memory-mapped icon cache
 
 use crate::ffi::*;
 use crate::util::*;
@@ -18,7 +18,7 @@ use core::ptr::null_mut;
 
 static mut ROOT: Option<WString> = None;
 
-/// <Documents>\Crow FO, resolved once per run.
+/// <Documents>\Crow DO, resolved once per run.
 pub fn root() -> WString {
     unsafe {
         let slot = &mut *core::ptr::addr_of_mut!(ROOT);
@@ -34,15 +34,21 @@ pub fn root() -> WString {
     }
 }
 
-/// Older versions kept the data in a hidden Desktop\.crowfo, which still shows
-/// on the desktop for anyone who displays hidden files. It moves to Documents
-/// once. If that can't happen yet (the folder is open somewhere, or Documents
-/// is on another drive) the old folder keeps working and the move is tried
-/// again on the next start.
+/// Older versions kept the data somewhere else. First in a hidden
+/// Desktop\.crowfo, then in Documents\Crow FO, back when the app was called
+/// Crow FO. The old folder moves once. If that can't happen yet (the folder is
+/// open somewhere, or Documents is on another drive) the old folder keeps
+/// working and the move is tried again on the next start.
 fn default_root() -> WString {
-    let new = wcat(&[&shell_folder(w!("Personal"), w!("\\Documents")), w!("\\Crow FO")]);
-    let old = wcat(&[&desktop_dir(), w!("\\.crowfo")]);
-    if !is_dir(&new) && is_dir(&old) {
+    let docs = shell_folder(w!("Personal"), w!("\\Documents"));
+    let new = wcat(&[&docs, w!("\\Crow DO")]);
+    if is_dir(&new) {
+        return new;
+    }
+    for old in [wcat(&[&docs, w!("\\Crow FO")]), wcat(&[&desktop_dir(), w!("\\.crowfo")])] {
+        if !is_dir(&old) {
+            continue;
+        }
         let n = wz(&new);
         unsafe {
             if MoveFileExW(wz(&old).as_ptr(), n.as_ptr(), 0) == 0 {
@@ -55,17 +61,18 @@ fn default_root() -> WString {
                 SetFileAttributesW(n.as_ptr(), if keep == 0 { 0x80 } else { keep });
             }
         }
+        break;
     }
     new
 }
 
-/// %LOCALAPPDATA%\Crow FO\cache, local to this machine and never synced.
+/// %LOCALAPPDATA%\Crow DO\cache, local to this machine and never synced.
 pub fn cache_dir() -> WString {
     let mut base = env(w!("LOCALAPPDATA"));
     if base.is_empty() {
         base = wcat(&[&env(w!("USERPROFILE")), w!("\\AppData\\Local")]);
     }
-    let c = wcat(&[&base, w!("\\Crow FO")]);
+    let c = wcat(&[&base, w!("\\Crow DO")]);
     mkdir(&c);
     let d = wcat(&[&c, w!("\\cache")]);
     mkdir(&d);
@@ -366,12 +373,12 @@ pub fn own_exe() -> WString {
     exe[..n].to_vec()
 }
 
-/// Turns "start with Windows" on or off for this CrowFO.exe.
+/// Turns "start with Windows" on or off for this CrowDO.exe.
 pub fn set_autostart(on: bool) {
     set_autostart_for(&own_exe(), on);
 }
 
-/// Same, for a given CrowFO.exe (used by the installer). The app starts with
+/// Same, for a given CrowDO.exe (used by the installer). The app starts with
 /// --background so it doesn't open its settings window at every sign-in.
 pub fn set_autostart_for(exe: &[u16], on: bool) {
     unsafe {
@@ -384,13 +391,13 @@ pub fn set_autostart_for(exe: &[u16], on: bool) {
             let mut cur = [0u16; 600];
             let mut len = (cur.len() * 2) as u32;
             let mut ty = 0;
-            let same = RegQueryValueExW(k, w!("Crow FO").as_ptr(), null_mut(), &mut ty, cur.as_mut_ptr() as *mut u8, &mut len) == 0
+            let same = RegQueryValueExW(k, w!("Crow DO").as_ptr(), null_mut(), &mut ty, cur.as_mut_ptr() as *mut u8, &mut len) == 0
                 && trim_nul(&cur) == trim_nul(&v);
             if !same {
-                RegSetValueExW(k, w!("Crow FO").as_ptr(), 0, REG_SZ, v.as_ptr() as *const u8, (v.len() * 2) as u32);
+                RegSetValueExW(k, w!("Crow DO").as_ptr(), 0, REG_SZ, v.as_ptr() as *const u8, (v.len() * 2) as u32);
             }
         } else {
-            RegDeleteValueW(k, w!("Crow FO").as_ptr());
+            RegDeleteValueW(k, w!("Crow DO").as_ptr());
         }
         RegCloseKey(k);
     }
@@ -400,7 +407,7 @@ pub fn set_autostart_for(exe: &[u16], on: bool) {
 // Classic verbs in HKCU, which need no admin rights. Windows 10 shows them
 // directly and Windows 11 shows them under "Show more options". A signed build
 // can also register the Windows 11 top level entry (crow_menu.dll).
-pub const DESK_KEY: &[u16] = w!("Software\\Classes\\DesktopBackground\\Shell\\CrowFO");
+pub const DESK_KEY: &[u16] = w!("Software\\Classes\\DesktopBackground\\Shell\\CrowDO");
 
 pub fn reg_str(path: &[u16], name: Option<&[u16]>, val: &[u16]) {
     unsafe {
@@ -435,7 +442,7 @@ pub fn set_desktop_menu(on: bool) {
     set_desktop_menu_for(&own_exe(), on);
 }
 
-/// Registers (or removes) "Crow FO" in the desktop's right-click menu, with the
+/// Registers (or removes) "Crow DO" in the desktop's right-click menu, with the
 /// labels in the current language.
 pub fn set_desktop_menu_for(exe: &[u16], on: bool) {
     reg_delete_tree(DESK_KEY);
@@ -444,11 +451,11 @@ pub fn set_desktop_menu_for(exe: &[u16], on: bool) {
     }
     let q = |arg: &[u16]| wcat(&[w!("\""), exe, w!("\""), arg]);
     let tr = |k: &'static str| to_w(crate::i18n::tr(k));
-    reg_str(DESK_KEY, Some(w!("MUIVerb")), w!("Crow FO"));
+    reg_str(DESK_KEY, Some(w!("MUIVerb")), w!("Crow DO"));
     reg_str(DESK_KEY, Some(w!("Icon")), exe);
     reg_str(DESK_KEY, Some(w!("SubCommands")), w!(""));
     let a = wcat(&[DESK_KEY, w!("\\shell\\a_new")]);
-    // icons #2 to #4 inside CrowFO.exe
+    // icons #2 to #4 inside CrowDO.exe
     let icon = |n: &[u16]| wcat(&[exe, w!(",-"), n]);
     reg_str(&a, Some(w!("MUIVerb")), &tr("menu.new_folder"));
     reg_str(&a, Some(w!("Icon")), &icon(w!("2")));

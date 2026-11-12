@@ -1,9 +1,9 @@
-//! crow_menu.dll adds Crow FO to the Windows 11 desktop context menu.
+//! crow_menu.dll adds Crow DO to the Windows 11 desktop context menu.
 //!
-//! It implements IExplorerCommand with a "Crow FO" submenu holding "New folder"
+//! It implements IExplorerCommand with a "Crow DO" submenu holding "New folder"
 //! and "New panel". All COM objects are static, with no heap, no std and no
-//! CRT. Explorer loads this DLL and the Crow FO process never does. Running a
-//! command starts `CrowFO.exe --new` or `CrowFO.exe --new-panel`, which hands the
+//! CRT. Explorer loads this DLL and the Crow DO process never does. Running a
+//! command starts `CrowDO.exe --new` or `CrowDO.exe --new-panel`, which hands the
 //! request to the running instance.
 #![no_std]
 #![allow(non_snake_case, clippy::missing_safety_doc)]
@@ -238,13 +238,13 @@ macro_rules! wide {
 
 unsafe extern "system" fn get_title(this: *mut c_void, _: *mut c_void, out: *mut *mut u16) -> HRESULT {
     match kind(this) {
-        K_ROOT => dup(wide!("Crow FO"), out),
+        K_ROOT => dup(wide!("Crow DO"), out),
         K_NEW => dup(wide!("New folder"), out),
         _ => dup(wide!("New panel"), out),
     }
 }
 
-/// Directory of this DLL (where CrowFO.exe and crow.ico live), with trailing '\'.
+/// Directory of this DLL (where CrowDO.exe and crow.ico live), with trailing '\'.
 unsafe fn module_dir(buf: &mut [u16; 520]) -> usize {
     let n = GetModuleFileNameW(MODULE.load(Ordering::Relaxed), buf.as_mut_ptr(), 520) as usize;
     let mut i = n.min(519);
@@ -294,7 +294,7 @@ unsafe extern "system" fn invoke(this: *mut c_void, _: *mut c_void, _: *mut c_vo
     };
     let mut exe = [0u16; 520];
     let n = module_dir(&mut exe);
-    let name = wide!("CrowFO.exe");
+    let name = wide!("CrowDO.exe");
     if n + name.len() + 1 >= 520 {
         return S_OK;
     }

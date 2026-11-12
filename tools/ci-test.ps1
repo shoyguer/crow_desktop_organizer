@@ -5,7 +5,7 @@
   Then it opens the installer, the uninstaller and the settings window, does
   a silent install, and fails if Windows reports a crash along the way.
 
-  It installs Crow FO and writes to the registry, so it only runs on GitHub
+  It installs Crow DO and writes to the registry, so it only runs on GitHub
   Actions.
 #>
 param(
@@ -17,7 +17,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true') {
-    throw 'This script installs Crow FO and edits the registry. Run it on GitHub Actions only.'
+    throw 'This script installs Crow DO and edits the registry. Run it on GitHub Actions only.'
 }
 
 $started = Get-Date
@@ -36,7 +36,7 @@ function Pass([string]$msg) {
 $numeric = ($Version -split '[-+]')[0]
 $fileVersion = "$numeric.$Build"
 
-foreach ($name in 'CrowFO.exe', 'CrowFOSetup.exe', 'crow_menu.dll') {
+foreach ($name in 'CrowDO.exe', 'CrowDOSetup.exe', 'crow_menu.dll') {
     $path = Join-Path $Dir $name
     if (-not (Test-Path $path)) {
         Fail "$name was not built."
@@ -73,7 +73,7 @@ foreach ($name in 'CrowFO.exe', 'CrowFOSetup.exe', 'crow_menu.dll') {
 # ---------------------------------------------------------------- crashes
 function Get-Crashes {
     Get-WinEvent -FilterHashtable @{ LogName = 'Application'; Id = 1000; StartTime = $started } -ErrorAction SilentlyContinue |
-        Where-Object { $_.Message -match 'CrowFO' }
+        Where-Object { $_.Message -match 'CrowDO' }
 }
 
 # Opens a program, waits for its window and makes sure it didn't crash.
@@ -97,29 +97,47 @@ function Test-Window([string]$exe, [string]$arguments, [string]$what) {
     if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
 }
 
-$app = (Resolve-Path (Join-Path $Dir 'CrowFO.exe')).Path
-$setup = (Resolve-Path (Join-Path $Dir 'CrowFOSetup.exe')).Path
+$app = (Resolve-Path (Join-Path $Dir 'CrowDO.exe')).Path
+$setup = (Resolve-Path (Join-Path $Dir 'CrowDOSetup.exe')).Path
 
 # The app draws its own icons for packaging. Make sure that still works.
 $art = Join-Path $env:RUNNER_TEMP 'crow-art'
 $p = Start-Process $app -ArgumentList "--export-art `"$art`"" -PassThru -Wait
 if ($p.ExitCode -ne 0 -or -not (Test-Path (Join-Path $art 'crow.ico')) -or -not (Test-Path (Join-Path $art 'Assets\Logo150.png'))) {
-    Fail "CrowFO.exe --export-art failed (exit code $($p.ExitCode))."
+    Fail "CrowDO.exe --export-art failed (exit code $($p.ExitCode))."
 } else {
-    Pass 'CrowFO.exe --export-art draws the icons'
+    Pass 'CrowDO.exe --export-art draws the icons'
 }
 
 Test-Window $setup '' 'The installer window'
 Test-Window $app '--uninstall' 'The uninstall window'
+
+# Leftovers of Crow FO, the app's old name, as 1.1.0 installed it. The install
+# below should take them over and clean them up.
+$docs = [Environment]::GetFolderPath('MyDocuments')
+$oldData = Join-Path $docs 'Crow FO'
+$oldDir = Join-Path $env:LOCALAPPDATA 'Programs\Crow FO'
+$oldUninstall = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrowFO'
+$oldDesk = 'HKCU:\Software\Classes\DesktopBackground\Shell\CrowFO'
+$run = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+New-Item -ItemType Directory $oldData, $oldDir -Force | Out-Null
+Set-Content (Join-Path $oldData 'from-crow-fo.txt') 'old data'
+Set-Content (Join-Path $oldDir 'CrowFO.exe') 'not a real exe'
+New-Item $oldUninstall -Force | Out-Null
+Set-ItemProperty $oldUninstall DisplayVersion '1.1.0'
+New-Item $oldDesk -Force | Out-Null
+New-Item 'HKCU:\Software\Crow FO' -Force | Out-Null
+Set-ItemProperty 'HKCU:\Software\Crow FO' CheckUpdates 0 -Type DWord
+Set-ItemProperty $run 'Crow FO' "`"$oldDir\CrowFO.exe`" --background"
 
 # Install for real, the way winget and scripts do. Start-Process -Wait would
 # also wait for the app the installer starts at the end, which never exits,
 # so only the installer itself is waited for.
 $p = Start-Process $setup -ArgumentList '/S' -PassThru
 $null = $p.Handle # keeps the exit code readable after the process ends
-$installed = Join-Path $env:LOCALAPPDATA 'Programs\Crow FO\CrowFO.exe'
-$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrowFO'
-$link = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Crow FO.lnk'
+$installed = Join-Path $env:LOCALAPPDATA 'Programs\Crow DO\CrowDO.exe'
+$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrowDO'
+$link = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Crow DO.lnk'
 if (-not $p.WaitForExit(60000)) {
     Fail 'The silent install was still running after 60 seconds.'
     Stop-Process -Id $p.Id -Force
@@ -127,9 +145,9 @@ if (-not $p.WaitForExit(60000)) {
     Fail "The silent install failed (exit code $($p.ExitCode))."
 } else {
     $entry = Get-ItemProperty $key -ErrorAction SilentlyContinue
-    if (-not (Test-Path $installed)) { Fail "The silent install didn't copy CrowFO.exe." }
-    elseif ((Get-Item $installed).VersionInfo.ProductVersion -ne $Display) { Fail "The installed CrowFO.exe isn't the one from this build." }
-    elseif (-not $entry) { Fail "Crow FO doesn't show up in Installed apps after the silent install." }
+    if (-not (Test-Path $installed)) { Fail "The silent install didn't copy CrowDO.exe." }
+    elseif ((Get-Item $installed).VersionInfo.ProductVersion -ne $Display) { Fail "The installed CrowDO.exe isn't the one from this build." }
+    elseif (-not $entry) { Fail "Crow DO doesn't show up in Installed apps after the silent install." }
     elseif ($entry.DisplayVersion -ne $Version) { Fail "Installed apps shows version '$($entry.DisplayVersion)' instead of '$Version'." }
     elseif (-not (Test-Path $link)) { Fail "The silent install didn't create the Start menu shortcut." }
     else { Pass "Silent install works, Installed apps shows $Version" }
@@ -138,23 +156,36 @@ if (-not $p.WaitForExit(60000)) {
 # After a silent install the app starts in the background and creates its
 # first folders.
 Start-Sleep -Seconds 5
-# The update check runs as a second, short lived CrowFO.exe. Skip it.
-$ids = Get-CimInstance Win32_Process -Filter "Name='CrowFO.exe'" |
+# The update check runs as a second, short lived CrowDO.exe. Skip it.
+$ids = Get-CimInstance Win32_Process -Filter "Name='CrowDO.exe'" |
     Where-Object { $_.ExecutablePath -eq $installed -and $_.CommandLine -notmatch '--check-update' } |
     ForEach-Object { $_.ProcessId }
 $running = @($ids | ForEach-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
 if (-not $running) {
-    Fail "Crow FO isn't running after the silent install."
+    Fail "Crow DO isn't running after the silent install."
 } else {
-    Pass ("Crow FO is running after the install ({0:N0} KB of memory)" -f ($running[0].WorkingSet64 / 1KB))
+    Pass ("Crow DO is running after the install ({0:N0} KB of memory)" -f ($running[0].WorkingSet64 / 1KB))
     # Starting it again asks the running copy to open the settings window.
     $s = Start-Process $installed -ArgumentList '--settings' -PassThru
     if (-not $s.WaitForExit(15000)) { Stop-Process -Id $s.Id -Force }
     Start-Sleep -Seconds 3
     $running[0].Refresh()
-    if ($running[0].HasExited) { Fail 'Crow FO closed after opening the settings window.' }
+    if ($running[0].HasExited) { Fail 'Crow DO closed after opening the settings window.' }
     else { Pass 'The settings window opens' }
 }
+
+# What's left of Crow FO
+$runValues = Get-ItemProperty $run -ErrorAction SilentlyContinue
+$checks = (Get-ItemProperty 'HKCU:\Software\Crow DO' -ErrorAction SilentlyContinue).CheckUpdates
+if (-not (Test-Path (Join-Path $docs 'Crow DO\from-crow-fo.txt'))) { Fail "The folders in Documents\Crow FO didn't move to Documents\Crow DO." }
+elseif (Test-Path $oldData) { Fail 'Documents\Crow FO is still there.' }
+elseif (Test-Path $oldDir) { Fail 'The old Crow FO install folder is still there.' }
+elseif (Test-Path $oldUninstall) { Fail 'Crow FO still shows up in Installed apps.' }
+elseif (Test-Path $oldDesk) { Fail 'The old Crow FO desktop menu entry is still there.' }
+elseif ($runValues.'Crow FO') { Fail 'Crow FO still starts with Windows.' }
+elseif (-not $runValues.'Crow DO') { Fail "Crow DO doesn't start with Windows, though Crow FO did." }
+elseif ($checks -ne 0) { Fail "The update check is on again, though it was off in Crow FO." }
+else { Pass 'An old Crow FO install moves over to Crow DO' }
 
 $crashes = @(Get-Crashes)
 foreach ($c in $crashes) {
@@ -163,7 +194,7 @@ foreach ($c in $crashes) {
 }
 if (-not $crashes) { Pass 'Windows reported no crashes' }
 
-Get-Process CrowFO, CrowFOSetup -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process CrowDO, CrowDOSetup -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # ---------------------------------------------------------------- summary
 if ($env:GITHUB_STEP_SUMMARY) {

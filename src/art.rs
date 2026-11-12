@@ -1,4 +1,4 @@
-//! The Crow logo, and `CrowFO.exe --export-art <dir>`, which writes crow.ico,
+//! The Crow logo, and `CrowDO.exe --export-art <dir>`, which writes crow.ico,
 //! the desktop menu icons and the package logos. Folders keep their own folder
 //! icon.
 
@@ -169,7 +169,7 @@ pub fn export(dir: &[u16]) -> bool {
     let assets = wcat(&[dir, w!("\\Assets")]);
     mkdir(&assets);
     let mut ok = write_file(&wcat(&[dir, w!("\\crow.ico")]), &ico(&[16, 20, 24, 32, 40, 48, 64, 256]));
-    // A smaller set is embedded in CrowFO.exe to keep the binary small
+    // A smaller set is embedded in CrowDO.exe to keep the binary small
     ok &= write_file(&wcat(&[dir, w!("\\crow_embed.ico")]), &ico(&[16, 32, 48]));
     // The desktop menu icons, also embedded. Menus use 16 px icons at 100% scale.
     for (name, body) in [(w!("\\menu_new.ico") as &[u16], MENU_NEW), (w!("\\menu_panel.ico"), MENU_PANEL), (w!("\\menu_settings.ico"), MENU_SETTINGS)] {

@@ -1,8 +1,8 @@
 """Rewrites the 32-bpp BMP images inside .ico files as compressed PNG.
 
 The result is pixel for pixel the same, only much smaller, which keeps
-CrowFO.exe and CrowFOSetup.exe light. Windows reads PNG icon images of any
-size. Run it after `CrowFO.exe --export-art packaging`:
+CrowDO.exe and CrowDOSetup.exe light. Windows reads PNG icon images of any
+size. Run it after `CrowDO.exe --export-art packaging`:
 
     python tools/ico-png.py packaging/*.ico
 

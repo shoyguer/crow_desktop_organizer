@@ -1,4 +1,4 @@
-//! `CrowFO.exe --snapshot <dir>` draws the main states of the interface into PNG
+//! `CrowDO.exe --snapshot <dir>` draws the main states of the interface into PNG
 //! files without creating any window. It is used to check the visuals and to
 //! make screenshots, and it never touches the screen, mouse or keyboard.
 
@@ -263,7 +263,7 @@ fn item_centers(a: &App, i: usize) -> Vec<(f32, f32)> {
     boxes.iter().map(|b| ((b.0 + b.2) as f32 / 2.0, (b.1 + b.3) as f32 / 2.0)).collect()
 }
 
-/// `CrowFO.exe --demo <dir>` plays a short scripted session offscreen: the
+/// `CrowDO.exe --demo <dir>` plays a short scripted session offscreen: the
 /// pointer opens a folder, moves over its shortcuts, leaves so it closes, then
 /// collapses and expands a panel. Folders react through the same hit testing,
 /// timings and animation steps as the real app. Every 20 ms frame of the scene

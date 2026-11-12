@@ -32,7 +32,7 @@ pub extern "system" fn entry() -> ! {
             // Started by the app at launch, or with --now by the button in the
             // settings (see update.rs). One of each at a time.
             let now = cl.contains("--now");
-            let name: &[u16] = if now { w!("Local\\CrowFOUpdateNow") } else { w!("Local\\CrowFOUpdate") };
+            let name: &[u16] = if now { w!("Local\\CrowDOUpdateNow") } else { w!("Local\\CrowDOUpdate") };
             CreateMutexW(core::ptr::null(), 1, name.as_ptr());
             if GetLastError() != ERROR_ALREADY_EXISTS {
                 update::cleanup();
@@ -62,9 +62,9 @@ pub extern "system" fn entry() -> ! {
         let want_prefs = cl.contains("--settings") || (new_req == 0 && !cl.contains("--background"));
 
         // Only one instance runs. A second one forwards its request and exits.
-        CreateMutexW(core::ptr::null(), 1, w!("Local\\CrowFolderOrganizer").as_ptr());
+        CreateMutexW(core::ptr::null(), 1, w!("Local\\CrowDesktopOrganizer").as_ptr());
         if GetLastError() == ERROR_ALREADY_EXISTS {
-            let h = FindWindowW(w!("CrowFOHost").as_ptr(), core::ptr::null());
+            let h = FindWindowW(w!("CrowDOHost").as_ptr(), core::ptr::null());
             if h != 0 {
                 let mut pid = 0u32;
                 GetWindowThreadProcessId(h, &mut pid);

@@ -1,4 +1,4 @@
-// Linker settings, embedded resources and the language table for CrowFO.exe.
+// Linker settings, embedded resources and the language table for CrowDO.exe.
 include!("build/res.rs");
 
 use std::fmt::Write as _;
@@ -29,7 +29,7 @@ fn main() {
     let names = ["crow_embed", "menu_new", "menu_panel", "menu_settings"];
     let icons: Vec<Vec<u8>> = names.iter().map(|n| std::fs::read(format!("packaging/{n}.ico")).expect("icon missing")).collect();
     let icons: Vec<&[u8]> = icons.iter().map(|v| v.as_slice()).collect();
-    res::write(&res, "Crow FO", "CrowFO.exe", false, &icons);
+    res::write(&res, "Crow DO", "CrowDO.exe", false, &icons);
     println!("cargo:rerun-if-changed=build/res.rs");
     for n in names {
         println!("cargo:rerun-if-changed=packaging/{n}.ico");

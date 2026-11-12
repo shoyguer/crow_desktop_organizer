@@ -1,9 +1,9 @@
-"""Builds docs/demo.gif from the frames that `CrowFO.exe --demo` writes.
+"""Builds docs/demo.gif from the frames that `CrowDO.exe --demo` writes.
 
 The demo needs a data folder with one hover folder and one panel, for example:
 
     set CROW_DATA=C:\\path\\to\\demo-data
-    CrowFO.exe --demo C:\\path\\to\\frames
+    CrowDO.exe --demo C:\\path\\to\\frames
     python tools/demo-gif.py C:\\path\\to\\frames docs/demo.gif
 
 It needs Pillow (pip install pillow). The frames are raw and large, so delete

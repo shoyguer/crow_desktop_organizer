@@ -1,5 +1,5 @@
 //! Update check. When the user allows it, each start of the installed app runs
-//! `CrowFO.exe --check-update`, a separate process that asks GitHub for the
+//! `CrowDO.exe --check-update`, a separate process that asks GitHub for the
 //! latest release and quits right away when there is nothing new. The main app
 //! never touches the network, so its memory stays the same.
 //!
@@ -8,8 +8,8 @@
 //! settings can say whether this is the latest version.
 //!
 //! When a newer version exists, a small window offers it. "Update" downloads
-//! CrowFOSetup.exe from the release, checks it against the release's
-//! SHA256SUMS.txt and runs it with /S. The installer closes Crow FO, replaces
+//! CrowDOSetup.exe from the release, checks it against the release's
+//! SHA256SUMS.txt and runs it with /S. The installer closes Crow DO, replaces
 //! it and starts it again, keeping every setting.
 
 use crate::ffi::*;
@@ -19,7 +19,7 @@ use alloc::string::String;
 use core::ptr::{null, null_mut};
 
 /// Per computer settings that don't belong in crow.ini, which may be synced.
-pub const KEY: &[u16] = w!("Software\\Crow FO");
+pub const KEY: &[u16] = w!("Software\\Crow DO");
 
 /// Whether the user allowed the check at startup.
 pub fn enabled() -> bool {
@@ -29,9 +29,13 @@ pub fn enabled() -> bool {
 /// The user's answer, or None if they were never asked (an install older
 /// than the update check).
 pub fn choice() -> Option<bool> {
+    choice_in(KEY)
+}
+
+pub fn choice_in(key: &[u16]) -> Option<bool> {
     unsafe {
         let mut k: HKEY = 0;
-        if RegOpenKeyExW(HKEY_CURRENT_USER, wz(KEY).as_ptr(), 0, KEY_READ, &mut k) != 0 {
+        if RegOpenKeyExW(HKEY_CURRENT_USER, wz(key).as_ptr(), 0, KEY_READ, &mut k) != 0 {
             return None;
         }
         let mut v = 0u32;
@@ -69,7 +73,7 @@ pub fn check_now() -> bool {
 /// Tells the running app how a check from the button ended.
 pub fn report(state: u8) {
     unsafe {
-        let h = FindWindowW(w!("CrowFOHost").as_ptr(), null());
+        let h = FindWindowW(w!("CrowDOHost").as_ptr(), null());
         if h != 0 {
             PostMessageW(h, crate::app::WM_CROW_UPDATE, state as usize, 0);
         }
@@ -165,12 +169,14 @@ pub fn check(patient: bool) -> Check {
 }
 
 fn updates_dir() -> WString {
-    wcat(&[&env(w!("LOCALAPPDATA")), w!("\\Crow FO\\updates")])
+    wcat(&[&env(w!("LOCALAPPDATA")), w!("\\Crow DO\\updates")])
 }
 
-/// Removes the installer left by the last update.
+/// Removes the installer left by the last update. The update from Crow FO
+/// leaves its own folder behind too.
 pub fn cleanup() {
-    unsafe { DeleteFileW(wz(&wcat(&[&updates_dir(), w!("\\CrowFOSetup.exe")])).as_ptr()) };
+    unsafe { DeleteFileW(wz(&wcat(&[&updates_dir(), w!("\\CrowDOSetup.exe")])).as_ptr()) };
+    crate::installer::remove_old_local_dir();
 }
 
 fn hex(b: &[u8]) -> String {
@@ -192,19 +198,19 @@ pub fn download_and_run(tag: &str) -> bool {
     let Some(want) = sums.lines().find_map(|l| {
         let mut it = l.split_whitespace();
         let (h, name) = (it.next()?, it.next()?);
-        (name.trim_start_matches('*') == "CrowFOSetup.exe" && h.len() == 64).then_some(h)
+        (name.trim_start_matches('*') == "CrowDOSetup.exe" && h.len() == 64).then_some(h)
     }) else {
         return false;
     };
-    let Ok(exe) = crate::net::get(&cat(&[&base, "CrowFOSetup.exe"]), "application/octet-stream", 16 << 20) else { return false };
+    let Ok(exe) = crate::net::get(&cat(&[&base, "CrowDOSetup.exe"]), "application/octet-stream", 16 << 20) else { return false };
     let Some(got) = crate::net::sha256(&exe) else { return false };
     if !hex(&got).eq_ignore_ascii_case(want) {
         return false;
     }
     let dir = updates_dir();
-    mkdir(&wcat(&[&env(w!("LOCALAPPDATA")), w!("\\Crow FO")]));
+    mkdir(&wcat(&[&env(w!("LOCALAPPDATA")), w!("\\Crow DO")]));
     mkdir(&dir);
-    let path = wcat(&[&dir, w!("\\CrowFOSetup.exe")]);
+    let path = wcat(&[&dir, w!("\\CrowDOSetup.exe")]);
     if !write_file(&path, &exe) {
         return false;
     }
@@ -212,7 +218,7 @@ pub fn download_and_run(tag: &str) -> bool {
     r > 32
 }
 
-/// The language picked in Crow FO settings, for the update window.
+/// The language picked in Crow DO settings, for the update window.
 pub fn language() -> String {
     read_file(&store::ini_path())
         .map(|d| crate::config::Config::parse(core::str::from_utf8(&d).unwrap_or("")).g.language)
