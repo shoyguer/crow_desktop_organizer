@@ -128,7 +128,8 @@ Set-ItemProperty $oldUninstall DisplayVersion '1.1.0'
 New-Item $oldDesk -Force | Out-Null
 New-Item 'HKCU:\Software\Crow FO' -Force | Out-Null
 Set-ItemProperty 'HKCU:\Software\Crow FO' CheckUpdates 0 -Type DWord
-Set-ItemProperty $run 'Crow FO' "`"$oldDir\CrowFO.exe`" --background"
+if (-not (Test-Path $run)) { New-Item $run | Out-Null }
+Set-ItemProperty $run 'Crow FO'"`"$oldDir\CrowFO.exe`" --background"
 
 # Install for real, the way winget and scripts do. Start-Process -Wait would
 # also wait for the app the installer starts at the end, which never exits,
