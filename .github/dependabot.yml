@@ -1,0 +1,11 @@
+# Once a month, checks for new versions of the actions the workflow uses.
+# Crow FO has no Rust dependencies, so that's all there is to keep track of.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

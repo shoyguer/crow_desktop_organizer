@@ -361,7 +361,7 @@ unsafe fn frame(d: &mut Dlg, draw: bool) {
         let mut sub = String::from(if d.uninstall { "" } else { tr("setup.subtitle") });
         if !d.uninstall {
             sub.push_str("  ·  ");
-            sub.push_str(env!("CARGO_PKG_VERSION"));
+            sub.push_str(env!("CROW_VERSION"));
         }
         ui.text(&sub, tx, ty + 32.0 * sc, 12.5, FW_NORMAL, mc, false);
         ui.y += 80.0 * sc;
